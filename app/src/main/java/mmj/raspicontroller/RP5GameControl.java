@@ -12,9 +12,12 @@ public class RP5GameControl implements GameControllerEventListener {
         this.logMessageView = logMessageView;
         this.robot = robot;
     }
+    /** Left stick drives the robot: up/down = forward/reverse, left/right = direction. */
     @Override public void onLeftStickMove(float x, float y) {
         Log.d("Game", "Left Stick: " + x + "," + y);
-
+        // Android Y axis is -1 at the top, so invert it: stick up = drive forward
+        this.robot.Move(Math.round(-y * 100));
+        this.robot.Turn(Math.round(x * 100));
     }
     @Override public void onRightStickMove(float x, float y) {
         Log.d("Game", "Right Stick: " + x + "," + y);
@@ -46,20 +49,8 @@ public class RP5GameControl implements GameControllerEventListener {
     }
 
     @Override public void onL2_pressure_change(float pressure) {
-        String messageText = "L2: " + pressure;
-        Log.d("Game", messageText);
-        //this.logMessageView.setText(messageText);
-        int moveRate = (int) (pressure*100);
-        if (moveRate >0)
-        {
-            this.robot.Move(moveRate);
-        }
-        else
-        {
-            this.robot.Break();
-            this.robot.Move(0);
-        }
-
+        // Driving is done with the left stick (onLeftStickMove)
+        Log.d("Game", "L2: " + pressure);
     }
 
     @Override

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.0.118</domain>
-    </domain-config>
+    <!-- The robot URL is configurable in the app and the robot API is plain ws:// / http://
+         on the LAN, so unencrypted traffic must be allowed to any host. -->
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

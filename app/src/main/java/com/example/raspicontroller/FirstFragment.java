@@ -19,13 +19,14 @@ import java.net.URL;
 
 import mmj.raspicontroller.RP5GameControl;
 import mmj.raspicontroller.RP5ControlManage;
-import mmj.raspicontroller.RobotMock;
+import mmj.raspicontroller.RaspiRobot;
 
 public class FirstFragment extends Fragment {
 
     private FragmentFirstBinding binding;
     RP5GameControl _eventHandler;
     RP5ControlManage _contollerManager;
+    RaspiRobot _robot;
 
     RobotCom _robotCom = new RobotCom();
 
@@ -44,9 +45,9 @@ public class FirstFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         TextView msgView = binding.textviewFirst;
-        RobotMock robot = new RobotMock(msgView);
+        _robot = new RaspiRobot(RobotSettings.getDriveUrl(requireContext()), msgView);
 
-        _eventHandler = new RP5GameControl(msgView, robot);
+        _eventHandler = new RP5GameControl(msgView, _robot);
         _contollerManager = new RP5ControlManage(_eventHandler);
 
         binding.buttonFirst.setOnClickListener(v ->
@@ -55,6 +56,31 @@ public class FirstFragment extends Fragment {
         );
 
         binding.btnBlink.setOnClickListener(v-> _robotCom.OnBlink());
+    }
+
+    /** Called after the URL was changed in Settings: reconnect to the new address. */
+    public void applyRobotUrl(String url) {
+        if (binding == null) return;   // view not created; the new URL is used next time
+        if (_robot != null) _robot.disconnect();
+        _robot = new RaspiRobot(url, binding.textviewFirst);
+        _eventHandler = new RP5GameControl(binding.textviewFirst, _robot);
+        _contollerManager = new RP5ControlManage(_eventHandler);
+        if (getLifecycle().getCurrentState().isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            _robot.connect();
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (_robot != null) _robot.connect();
+    }
+
+    /** Leaving the screen or the app stops the robot and closes the WebSocket. */
+    @Override
+    public void onStop() {
+        if (_robot != null) _robot.disconnect();
+        super.onStop();
     }
 
     @Override

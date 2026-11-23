@@ -22,7 +22,15 @@ import com.example.raspicontroller.databinding.ActivityMainBinding;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import android.text.InputType;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+
+import androidx.appcompat.app.AlertDialog;
+
 import java.util.List;
+
+import mmj.raspicontroller.RaspiRobot;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -68,10 +76,63 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            showRobotUrlDialog();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /** Lets the user change the robot's drive WebSocket URL; saved on the device. */
+    private void showRobotUrlDialog() {
+        EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        input.setSingleLine(true);
+        input.setText(RobotSettings.getDriveUrl(this));
+        input.setSelection(input.getText().length());
+        int pad = Math.round(20 * getResources().getDisplayMetrics().density);
+        FrameLayout container = new FrameLayout(this);
+        container.setPadding(pad, pad / 2, pad, 0);
+        container.addView(input);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Robot URL")
+                .setMessage("Drive WebSocket, e.g. " + RobotSettings.DEFAULT_DRIVE_URL)
+                .setView(container)
+                .setPositiveButton("Save", null)   // set below so an invalid URL keeps the dialog open
+                .setNeutralButton("Default", null)
+                .setNegativeButton("Cancel", null)
+                .create();
+
+        dialog.setOnShowListener(d -> {
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+                input.setText(RobotSettings.DEFAULT_DRIVE_URL);
+                input.setSelection(input.getText().length());
+            });
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                String url = input.getText().toString().trim();
+                if (!RaspiRobot.isValidUrl(url)) {
+                    input.setError("Must be a ws:// or wss:// URL, e.g. " + RobotSettings.DEFAULT_DRIVE_URL);
+                    return;
+                }
+                RobotSettings.setDriveUrl(this, url);
+                FirstFragment first = findFirstFragment();
+                if (first != null) first.applyRobotUrl(url);
+                dialog.dismiss();
+            });
+        });
+        dialog.show();
+    }
+
+    private FirstFragment findFirstFragment() {
+        NavHostFragment navHostFragment =
+                (NavHostFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.nav_host_fragment_content_main);
+        if (navHostFragment == null) return null;
+        for (Fragment f : navHostFragment.getChildFragmentManager().getFragments()) {
+            if (f instanceof FirstFragment) return (FirstFragment) f;
+        }
+        return null;
     }
 
     @Override

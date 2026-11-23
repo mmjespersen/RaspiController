@@ -73,19 +73,30 @@ public class RP5ControlManage {
 
     float _oldL2 =0;
     float _oldR2 =0;
+    float _oldLX = 0;
+    float _oldLY = 0;
+
+    /** 0 inside the deadzone, otherwise rescaled so the output still runs smoothly 0..1. */
+    private static float applyDeadzone(float v) {
+        float a = Math.abs(v);
+        if (a < STICK_DEADZONE) return 0;
+        return Math.signum(v) * Math.min(1f, (a - STICK_DEADZONE) / (1f - STICK_DEADZONE));
+    }
     // --------------------------------------------------------------
     // Handle Analog Motion Events (sticks, triggers, D-pad)
     // --------------------------------------------------------------
     public boolean handleMotionEvent(MotionEvent event) {
         if (listener == null) return false;
 
-        // Left stick
-        float lx = event.getAxisValue(MotionEvent.AXIS_X);
-        float ly = event.getAxisValue(MotionEvent.AXIS_Y);
-        if (Math.abs(lx) < STICK_DEADZONE) lx = 0;
-        if (Math.abs(ly) < STICK_DEADZONE) ly = 0;
-        if (lx != 0 || ly != 0)
+        // Left stick - reported on every change, including going back to center (0,0),
+        // so the robot stops when the stick is released.
+        float lx = applyDeadzone(event.getAxisValue(MotionEvent.AXIS_X));
+        float ly = applyDeadzone(event.getAxisValue(MotionEvent.AXIS_Y));
+        if (lx != _oldLX || ly != _oldLY) {
             listener.onLeftStickMove(lx, ly);
+            _oldLX = lx;
+            _oldLY = ly;
+        }
 
         // Right stick
         float rx = event.getAxisValue(MotionEvent.AXIS_Z);
